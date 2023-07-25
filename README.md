@@ -1,31 +1,29 @@
 # hyperswarm
 
+### [See the full API docs at docs.holepunch.to](https://docs.holepunch.to/building-blocks/hyperswarm)
+
 A high-level API for finding and connecting to peers who are interested in a "topic."
-
-## NOTE: v3
-
-Note that this is the README for v3 which is tagged under next. To see the v2 documentation/code go to https://github.com/hyperswarm/hyperswarm/tree/v2
-
-As v3 fully matures over the next month it will be shifted to npm latest.
 
 ## Installation
 ```
-npm install hyperswarm@next
+npm install hyperswarm
 ```
 
 ## Usage
 ```js
 const Hyperswarm = require('hyperswarm')
+
 const swarm1 = new Hyperswarm()
 const swarm2 = new Hyperswarm()
 
 swarm1.on('connection', (conn, info) => {
- // swarm1 will receive server connections
- conn.write('this is a server connection')
- conn.end()
+  // swarm1 will receive server connections
+  conn.write('this is a server connection')
+  conn.end()
 })
+
 swarm2.on('connection', (conn, info) => {
- conn.on('data', data => console.log('client got message:', data.toString()))
+  conn.on('data', data => console.log('client got message:', data.toString()))
 })
 
 const topic = Buffer.alloc(32).fill('hello world') // A topic must be 32 bytes
@@ -50,23 +48,31 @@ Construct a new Hyperswarm instance.
 * `firewall`: A sync function of the form `remotePublicKey => (true|false)`. If true, the connection will be rejected. Defaults to allowing all connections.
 * `dht`: A DHT instance. Defaults to a new instance.
 
+#### `swarm.connecting`
+Number that indicates connections in progress.
+
 #### `swarm.connections`
 A set of all active client/server connections.
 
 #### `swarm.peers`
 A Map containing all connected peers, of the form: `(Noise public key hex string) -> PeerInfo object`
 
-See the [`PeerInfo`](https://github.com/hyperswarm/hyperswarm/blob/v3/README.md#peerinfo-api) API for more details.
+See the [`PeerInfo`](https://github.com/holepunchto/hyperswarm/blob/v3/README.md#peerinfo-api) API for more details.
 
 #### `swarm.dht`
-A [`@hyperswarm/dht`](https://github.com/hyperswarm/dht) instance. Useful if you want lower-level control over Hyperswarm's networking.
+A [`hyperdht`](https://github.com/holepunchto/hyperdht) instance. Useful if you want lower-level control over Hyperswarm's networking.
 
 #### `swarm.on('connection', (socket, peerInfo) => {})`
 Emitted whenever the swarm connects to a new peer.
 
 `socket` is an end-to-end (Noise) encrypted Duplex stream
 
-`peerInfo` is a [`PeerInfo`](https://github.com/hyperswarm/hyperswarm/blob/v3/README.md#peerinfo-api) instance
+`peerInfo` is a [`PeerInfo`](https://github.com/holepunchto/hyperswarm/blob/v3/README.md#peerinfo-api) instance
+
+#### `swarm.on('update', () => {})`
+Emitted when internal values are changed, useful for user interfaces.
+
+For example: emitted when `swarm.connecting` or `swarm.connections` changes.
 
 #### `const discovery = swarm.join(topic, opts = {})`
 Start discovering and connecting to peers sharing a common topic. As new peers are connected to, they will be emitted from the swarm as `connection` events.
@@ -76,7 +82,7 @@ Start discovering and connecting to peers sharing a common topic. As new peers a
 * `server`: Accept server connections for this topic by announcing yourself to the DHT. Defaults to `true`.
 * `client`: Actively search for and connect to discovered servers. Defaults to `true`.
 
-Returns a [`PeerDiscovery`](https://github.com/hyperswarm/hyperswarm/blob/v3/README.md#peerdiscovery-api) object.
+Returns a [`PeerDiscovery`](https://github.com/holepunchto/hyperswarm/blob/v3/README.md#peerdiscovery-api) object.
 
 #### Clients and Servers
 In Hyperswarm, there are two ways for peers to join the swarm: client mode and server mode. If you've previously used Hyperswarm v2, these were called "lookup" and "announce", but we now think "client" and "server" are more descriptive.
@@ -109,7 +115,7 @@ Stop attempting direct connections to a known peer.
 If a direct connection is already established, that connection will __not__ be destroyed by `leavePeer`.
 
 #### `const discovery = swarm.status(topic)`
-Get the [`PeerDiscovery`](https://github.com/hyperswarm/hyperswarm/blob/v3/README.md#peerdiscovery-api) object associated with the topic, if it exists.
+Get the [`PeerDiscovery`](https://github.com/holepunchto/hyperswarm/blob/v3/README.md#peerdiscovery-api) object associated with the topic, if it exists.
 
 #### `await swarm.listen()`
 Explicitly start listening for incoming connections. This will be called internally after the first `join`, so it rarely needs to be called manually.
@@ -151,8 +157,8 @@ An Array of topics that this Peer is associated with -- `topics` will only be up
 #### `peerInfo.prioritized`
 If true, the swarm will rapidly attempt to reconnect to this peer.
 
-#### `peerInfo.ban()`
-Ban the peer. This will prevent any future reconnection attempts, but it will __not__ close any existing connections.
+#### `peerInfo.ban(banStatus = false)`
+Ban or unban the peer. Banning will prevent any future reconnection attempts, but it will __not__ close any existing connections.
 
 ## License
 MIT

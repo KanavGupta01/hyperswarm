@@ -1,17 +1,23 @@
+const test = require('brittle')
 const crypto = require('hypercore-crypto')
 const random = require('math-random-seed')
 const { timeout } = require('nonsynchronous')
+const createTestnet = require('hyperdht/testnet')
 
 const Hyperswarm = require('..')
-const { test, destroyAll } = require('./helpers')
 
 const BACKOFFS = [
   100,
   200,
-  300
+  300,
+  400
 ]
 
-test('chaos - recovers after random disconnections (takes ~60s)', async (bootstrap, t) => {
+test('chaos - recovers after random disconnections (takes ~60s)', async (t) => {
+  t.timeout(90000)
+
+  const { bootstrap } = await createTestnet(3, t.teardown)
+
   const SEED = 'hyperswarm v3'
   const NUM_SWARMS = 10
   const NUM_TOPICS = 15
@@ -86,17 +92,16 @@ test('chaos - recovers after random disconnections (takes ~60s)', async (bootstr
   await timeout(TEST_DURATION) // Wait for the chaos to resolve
 
   for (const [swarm, expectedPeers] of peersBySwarm) {
-    t.same(swarm.connections.size, expectedPeers.size, 'swarm has the correct number of connections')
+    t.alike(swarm.connections.size, expectedPeers.size, 'swarm has the correct number of connections')
     const missingKeys = []
     for (const conn of swarm.connections) {
       const key = conn.remotePublicKey.toString('hex')
       if (!expectedPeers.has(key)) missingKeys.push(key)
     }
-    t.same(missingKeys.length, 0, 'swarm is not missing any expected peers')
+    t.alike(missingKeys.length, 0, 'swarm is not missing any expected peers')
   }
 
-  await destroyAll(...swarms)
-  t.end()
+  for (const swarm of swarms) await swarm.destroy()
 })
 
 function noop () {}
